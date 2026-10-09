@@ -5,20 +5,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Robot Museo WRO - Control</title>
 
-  <!-- AQUÍ VAN LAS DOS LIBRERÍAS EXTERNAS -->
+  <!-- Librerías Externas para QR y Compatibilidad de Video -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; background-color: #222; color: white; margin: 0; padding: 10px; }
+    body { 
+      font-family: Arial, sans-serif; 
+      text-align: center; 
+      background-color: #1e1e1e; 
+      color: white; 
+      margin: 0; 
+      padding: 10px; 
+    }
     h2 { margin-bottom: 10px; }
-    #stream-container { margin: 0 auto; max-width: 400px; background: #000; border-radius: 8px; overflow: hidden; }
+    #stream-container { 
+      margin: 0 auto; 
+      max-width: 400px; 
+      background: #000; 
+      border-radius: 8px; 
+      overflow: hidden; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
     #video-stream { width: 100%; height: auto; display: block; }
-    #qr-result { background: #333; margin: 10px auto; padding: 10px; max-width: 380px; border-radius: 6px; font-weight: bold; color: #0f0; }
-    .controls { margin-top: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 300px; margin-left: auto; margin-right: auto; }
-    button { padding: 15px; font-size: 18px; font-weight: bold; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    #qr-result { 
+      background: #2b2b2b; 
+      margin: 12px auto; 
+      padding: 12px; 
+      max-width: 380px; 
+      border-radius: 6px; 
+      font-weight: bold; 
+      color: #28a745; 
+      border: 1px solid #444;
+    }
+    .controls { 
+      margin-top: 15px; 
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      gap: 10px; 
+      max-width: 300px; 
+      margin-left: auto; 
+      margin-right: auto; 
+    }
+    button { 
+      padding: 15px; 
+      font-size: 18px; 
+      font-weight: bold; 
+      background: #007bff; 
+      color: white; 
+      border: none; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      touch-action: manipulation;
+    }
     button:active { background: #0056b3; }
     .stop-btn { background: #dc3545; }
+    .stop-btn:active { background: #a71d2a; }
     .empty { visibility: hidden; }
   </style>
 </head>
@@ -26,15 +68,15 @@
 
   <h2>Robot Museo WRO</h2>
 
-  <!-- 1. CÁMARA EN VIVO -->
+  <!-- Streaming en vivo de la ESP32-CAM -->
   <div id="stream-container">
-    <img id="video-stream" src="" alt="Cargando video...">
+    <img id="video-stream" src="" alt="Cargando cámara...">
   </div>
 
-  <!-- 2. RESULTADO DE QR -->
+  <!-- Indicador del QR detectado -->
   <div id="qr-result">Buscando QR...</div>
 
-  <!-- 3. BOTONES DE NAVEGACIÓN -->
+  <!-- Panel de control de 5 botones -->
   <div class="controls">
     <div class="empty"></div>
     <button onclick="mover('F')">▲ Avanzar</button>
@@ -47,11 +89,11 @@
     <div class="empty"></div>
   </div>
 
-  <!-- CANVAS OCULTO PARA PROCESAR EL QR CON jsQR -->
+  <!-- Canvas oculto para decodificación con jsQR -->
   <canvas id="qr-canvas" style="display:none;"></canvas>
 
   <script>
-    const esp32Ip = "http://192.168.4.1"; // IP predeterminada de la ESP32 en modo AP
+    const esp32Ip = "http://192.168.4.1"; // IP del Access Point de la ESP32
     const imgStream = document.getElementById('video-stream');
     const qrResult = document.getElementById('qr-result');
     const canvas = document.getElementById('qr-canvas');
@@ -59,7 +101,6 @@
 
     let ultimoQR = "";
 
-    // Actualizar la captura de imagen dinámicamente
     function actualizarStream() {
       const nuevaImg = new Image();
       nuevaImg.crossOrigin = "Anonymous";
@@ -70,13 +111,11 @@
       nuevaImg.src = esp32Ip + "/capture?" + new Date().getTime();
     }
 
-    // Enviar comandos de movimiento a la ESP32
     function mover(direccion) {
       fetch(esp32Ip + "/mover?dir=" + direccion)
-        .catch(err => console.log("Error al mover:", err));
+        .catch(err => console.log("Error al enviar movimiento:", err));
     }
 
-    // Procesar la imagen con jsQR
     function escanearQR(imagen) {
       canvas.width = imagen.width;
       canvas.height = imagen.height;
@@ -89,13 +128,13 @@
         ultimoQR = code.data;
         qrResult.innerText = "✓ QR Detectado: " + ultimoQR;
         
-        // Notificar a la ESP32 para que lo mande por I2C
+        // Enviar a la ESP32 para retransmitir por I2C
         fetch(esp32Ip + "/qr_detectado?val=" + encodeURIComponent(ultimoQR))
           .catch(err => console.log("Error al enviar QR:", err));
       }
     }
 
-    // Iniciar bucle de refresco de video
+    // Refresco cada 200 ms
     setInterval(actualizarStream, 200);
   </script>
 </body>
