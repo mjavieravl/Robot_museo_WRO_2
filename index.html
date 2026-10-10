@@ -1,141 +1,83 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Robot Museo WRO - Control</title>
-
-  <!-- Librerías Externas para QR y Compatibilidad de Video -->
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
-
-  <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      text-align: center; 
-      background-color: #1e1e1e; 
-      color: white; 
-      margin: 0; 
-      padding: 10px; 
-    }
-    h2 { margin-bottom: 10px; }
-    #stream-container { 
-      margin: 0 auto; 
-      max-width: 400px; 
-      background: #000; 
-      border-radius: 8px; 
-      overflow: hidden; 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    }
-    #video-stream { width: 100%; height: auto; display: block; }
-    #qr-result { 
-      background: #2b2b2b; 
-      margin: 12px auto; 
-      padding: 12px; 
-      max-width: 380px; 
-      border-radius: 6px; 
-      font-weight: bold; 
-      color: #28a745; 
-      border: 1px solid #444;
-    }
-    .controls { 
-      margin-top: 15px; 
-      display: grid; 
-      grid-template-columns: repeat(3, 1fr); 
-      gap: 10px; 
-      max-width: 300px; 
-      margin-left: auto; 
-      margin-right: auto; 
-    }
-    button { 
-      padding: 15px; 
-      font-size: 18px; 
-      font-weight: bold; 
-      background: #007bff; 
-      color: white; 
-      border: none; 
-      border-radius: 8px; 
-      cursor: pointer; 
-      touch-action: manipulation;
-    }
-    button:active { background: #0056b3; }
-    .stop-btn { background: #dc3545; }
-    .stop-btn:active { background: #a71d2a; }
-    .empty { visibility: hidden; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Robot ESP32-CAM</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+            margin-top: 50px;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            width: 250px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+        .btn-container {
+            margin: 10px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:active {
+            background-color: #0056b3;
+            transform: translateY(2px);
+        }
+        .stop {
+            background-color: #DC3545;
+        }
+        .stop:active {
+            background-color: #a71d2a;
+        }
+    </style>
 </head>
 <body>
 
-  <h2>Robot Museo WRO</h2>
+    <h1>Control de Robot ESP32-CAM</h1>
+    <p>Ingresa la IP que muestra la pantalla LCD:</p>
+    <input type="text" id="espIp" placeholder="Ej: 192.168.4.2">
+    
+    <div class="btn-container">
+        <button onclick="enviarComando('avanzar')">▲ Avanzar</button>
+    </div>
+    <div class="btn-container">
+        <button onclick="enviarComando('retroceder')">▼ Retroceder</button>
+        <button class="stop" onclick="enviarComando('detener')">■ Detener</button>
+    </div>
 
-  <!-- Streaming en vivo de la ESP32-CAM -->
-  <div id="stream-container">
-    <img id="video-stream" src="" alt="Cargando cámara...">
-  </div>
+    <script>
+        function enviarComando(accion) {
+            const ip = document.getElementById('espIp').value.trim();
+            if (!ip) {
+                alert("Por favor ingresa la dirección IP que aparece en la LCD.");
+                return;
+            }
+            const url = `http://${ip}/${accion}`;
+            
+            fetch(url)
+                .then(response => response.text())
+                .then(data => console.log("Respuesta:", data))
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("No se pudo conectar con el robot. Asegúrate de estar en la misma red Wi-Fi y que la IP sea correcta.");
+                });
+        }
+    </script>
 
-  <!-- Indicador del QR detectado -->
-  <div id="qr-result">Buscando QR...</div>
-
-  <!-- Panel de control de 5 botones -->
-  <div class="controls">
-    <div class="empty"></div>
-    <button onclick="mover('F')">▲ Avanzar</button>
-    <div class="empty"></div>
-    <button onclick="mover('L')">◄ Izq</button>
-    <button class="stop-btn" onclick="mover('S')">■ STOP</button>
-    <button onclick="mover('R')">► Der</button>
-    <div class="empty"></div>
-    <button onclick="mover('B')">▼ Atrás</button>
-    <div class="empty"></div>
-  </div>
-
-  <!-- Canvas oculto para decodificación con jsQR -->
-  <canvas id="qr-canvas" style="display:none;"></canvas>
-
-  <script>
-    const esp32Ip = "http://192.168.4.1"; // IP del Access Point de la ESP32
-    const imgStream = document.getElementById('video-stream');
-    const qrResult = document.getElementById('qr-result');
-    const canvas = document.getElementById('qr-canvas');
-    const ctx = canvas.getContext('2d');
-
-    let ultimoQR = "";
-
-    function actualizarStream() {
-      const nuevaImg = new Image();
-      nuevaImg.crossOrigin = "Anonymous";
-      nuevaImg.onload = function() {
-        imgStream.src = nuevaImg.src;
-        escanearQR(nuevaImg);
-      };
-      nuevaImg.src = esp32Ip + "/capture?" + new Date().getTime();
-    }
-
-    function mover(direccion) {
-      fetch(esp32Ip + "/mover?dir=" + direccion)
-        .catch(err => console.log("Error al enviar movimiento:", err));
-    }
-
-    function escanearQR(imagen) {
-      canvas.width = imagen.width;
-      canvas.height = imagen.height;
-      ctx.drawImage(imagen, 0, 0, canvas.width, canvas.height);
-      
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-      if (code && code.data !== ultimoQR) {
-        ultimoQR = code.data;
-        qrResult.innerText = "✓ QR Detectado: " + ultimoQR;
-        
-        // Enviar a la ESP32 para retransmitir por I2C
-        fetch(esp32Ip + "/qr_detectado?val=" + encodeURIComponent(ultimoQR))
-          .catch(err => console.log("Error al enviar QR:", err));
-      }
-    }
-
-    // Refresco cada 200 ms
-    setInterval(actualizarStream, 200);
-  </script>
 </body>
 </html>
