@@ -1,49 +1,52 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Control Robot ESP32-CAM - Obras MNBA</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      background-color: #f4f4f9;
+      background: #f4f4f9;
       margin: 0;
-      padding: 10px;
+      padding: 16px;
     }
-    h1 {
-      font-size: 1.2rem;
-      color: #333;
-    }
+
+    h1 { font-size: 1.4rem; color: #333; }
+
     img {
       width: 100%;
-      max-width: 400px;
+      max-width: 500px;
       height: auto;
       border: 2px solid #ccc;
       border-radius: 8px;
-      margin-bottom: 15px;
+      background: #222;
     }
+
     .controls {
       display: grid;
       grid-template-columns: repeat(3, 80px);
       justify-content: center;
       gap: 10px;
-      margin-bottom: 20px;
+      margin: 20px auto;
     }
+
     button {
-      padding: 15px;
-      font-size: 1.1rem;
+      padding: 14px 8px;
+      font-size: 1rem;
       font-weight: bold;
       cursor: pointer;
       border: none;
       border-radius: 8px;
-      background-color: #007bff;
+      background: #007bff;
       color: white;
     }
-    button:active {
-      background-color: #0056b3;
-    }
+
+    button:active { background: #0056b3; }
+
     .obras-container {
       display: flex;
       flex-direction: column;
@@ -51,60 +54,100 @@
       max-width: 300px;
       margin: 0 auto;
     }
-    .btn- obra {
-      background-color: #28a745;
-    }
-    .btn-obra:active {
-      background-color: #1e7e34;
-    }
+
+    .btn-obra { background: #28a745; }
+    .btn-obra:active { background: #1e7e34; }
+
+    #estado { color: #444; }
   </style>
 </head>
+
 <body>
-
   <h1>Control Robot ESP32-CAM</h1>
-  
-  <!-- Transmisión de video en vivo -->
-  <img src="" id="stream" alt="Video en vivo">
 
-  <!-- Botones de Movimiento -->
+  <p>Transmisión en vivo</p>
+  <img id="stream" alt="Video en vivo">
+
+  <p id="estado">Conectando con la cámara...</p>
+
+  <h2>Movimiento</h2>
+
   <div class="controls">
     <div></div>
     <button onclick="enviarComando('avanzar')">▲</button>
     <div></div>
+
     <button onclick="enviarComando('izquierda')">◄</button>
     <button onclick="enviarComando('detener')">■</button>
     <button onclick="enviarComando('derecha')">►</button>
+
     <div></div>
     <button onclick="enviarComando('retroceder')">▼</button>
     <div></div>
   </div>
 
   <h2>Obras MNBA (LCD)</h2>
-  <!-- Botones para las 5 obras seleccionadas -->
+
   <div class="obras-container">
-    <button class="btn-obra" onclick="enviarComando('jardin')">Verde: Jardín Asoleado</button>
-    <button class="btn-obra" onclick="enviarComando('coqueteria')">Rosado: Coquetería[cite: 4]</button>
-    <button class="btn-obra" onclick="enviarComando('santodomingo')">Rojo: Santo Domingo[cite: 4]</button>
-    <button class="btn-obra" onclick="enviarComando('patriota')">Café: El Patriota</button>
-    <button class="btn-obra" onclick="enviarComando('fumadora')">Amarillo: La Fumadora</button>
+    <button class="btn-obra" onclick="enviarComando('jardin')">
+      Verde: Jardín Asoleado
+    </button>
+    <button class="btn-obra" onclick="enviarComando('coqueteria')">
+      Rosado: Coquetería
+    </button>
+    <button class="btn-obra" onclick="enviarComando('santodomingo')">
+      Rojo: Santo Domingo
+    </button>
+    <button class="btn-obra" onclick="enviarComando('patriota')">
+      Café: El Patriota
+    </button>
+    <button class="btn-obra" onclick="enviarComando('fumadora')">
+      Amarillo: La Fumadora
+    </button>
   </div>
 
   <script>
-    // Configura automáticamente el puerto del stream en base a la IP actual del ESP32
-    window.onload = function () {
-      const host = window.location.hostname;
-      if (host) {
-        document.getElementById('stream').src = "http://" + host + ":81/stream";
-      }
+    // Sustituye por la IP real de tu ESP32-CAM.
+    const ESP32_IP = "192.168.1.100";
+
+    const BASE_URL = "http://" + ESP32_IP;
+
+    const stream = document.getElementById("stream");
+    const estado = document.getElementById("estado");
+
+    stream.src = BASE_URL + ":81/stream";
+
+    stream.onload = function () {
+      estado.textContent = "Cámara conectada";
+    };
+
+    stream.onerror = function () {
+      estado.textContent =
+        "No se pudo cargar el video. Revisa la IP y el Wi-Fi.";
     };
 
     function enviarComando(accion) {
-      fetch('/' + accion)
-        .then(response => response.text())
-        .then(data => console.log(data))
-        .catch(error => console.error('Error:', error));
+      fetch(BASE_URL + "/" + accion, {
+        method: "GET",
+        mode: "cors"
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+        return response.text();
+      })
+      .then(data => {
+        estado.textContent = "Comando enviado: " + accion;
+        console.log(data);
+      })
+      .catch(error => {
+        estado.textContent =
+          "Error al enviar " + accion + ". Revisa la conexión.";
+        console.error(error);
+      });
     }
   </script>
-
 </body>
 </html>
+
