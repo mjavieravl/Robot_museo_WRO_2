@@ -1,109 +1,110 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Robot ESP32-CAM - QR</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f4f4f9;
-            margin-top: 20px;
-        }
-        input {
-            padding: 10px;
-            font-size: 16px;
-            width: 250px;
-            margin-bottom: 15px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            text-align: center;
-        }
-        .stream-container {
-            margin: 15px auto;
-        }
-        img {
-            width: 320px;
-            height: 240px;
-            border: 3px solid #333;
-            border-radius: 8px;
-            background-color: #000;
-        }
-        .controls {
-            display: grid;
-            grid-template-columns: repeat(3, 100px);
-            gap: 10px;
-            justify-content: center;
-            margin-top: 15px;
-        }
-        button {
-            padding: 15px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        button:active {
-            background-color: #0056b3;
-            transform: translateY(2px);
-        }
-        .stop { background-color: #DC3545; }
-        .start { background-color: #28A745; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control Robot ESP32-CAM - Obras MNBA</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 10px;
+    }
+    h1 {
+      font-size: 1.2rem;
+      color: #333;
+    }
+    img {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 80px);
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 15px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+    }
+    button:active {
+      background-color: #0056b3;
+    }
+    .obras-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+    .btn- obra {
+      background-color: #28a745;
+    }
+    .btn-obra:active {
+      background-color: #1e7e34;
+    }
+  </style>
 </head>
 <body>
 
-    <h1>Control Robot ESP32-CAM</h1>
-    <p>Ingresa la IP de la pantalla LCD:</p>
-    <input type="text" id="espIp" placeholder="Ej: 192.168.4.2" onchange="conectarStream()">
-    
-    <div class="stream-container">
-        <h3>Cámara en Vivo (Para el QR)</h3>
-        <img id="streamImage" alt="Esperando IP de la cámara...">
-    </div>
+  <h1>Control Robot ESP32-CAM</h1>
+  
+  <!-- Transmisión de video en vivo -->
+  <img src="" id="stream" alt="Video en vivo">
 
-    <div class="controls">
-        <div></div>
-        <button onclick="enviarComando('avanzar')">▲<br>Avanzar</button>
-        <div></div>
-        <button onclick="enviarComando('izquierda')">◄<br>Izquierda</button>
-        <button class="stop" onclick="enviarComando('detener')">■<br>Stop</button>
-        <button onclick="enviarComando('derecha')">►<br>Derecha</button>
-        <button class="start" onclick="enviarComando('start')">✔<br>Start</button>
-        <button onclick="enviarComando('retroceder')">▼<br>Retroceder</button>
-        <div></div>
-    </div>
+  <!-- Botones de Movimiento -->
+  <div class="controls">
+    <div></div>
+    <button onclick="enviarComando('avanzar')">▲</button>
+    <div></div>
+    <button onclick="enviarComando('izquierda')">◄</button>
+    <button onclick="enviarComando('detener')">■</button>
+    <button onclick="enviarComando('derecha')">►</button>
+    <div></div>
+    <button onclick="enviarComando('retroceder')">▼</button>
+    <div></div>
+  </div>
 
-    <script>
-        function conectarStream() {
-            const ip = document.getElementById('espIp').value.trim();
-            if (ip) {
-                // El streaming de la cámara en el ESP32 suele ir por el puerto 81 en la ruta /stream
-                document.getElementById('streamImage').src = `http://${ip}:81/stream`;
-            }
-        }
+  <h2>Obras MNBA (LCD)</h2>
+  <!-- Botones para las 5 obras seleccionadas -->
+  <div class="obras-container">
+    <button class="btn-obra" onclick="enviarComando('jardin')">Verde: Jardín Asoleado</button>
+    <button class="btn-obra" onclick="enviarComando('coqueteria')">Rosado: Coquetería[cite: 4]</button>
+    <button class="btn-obra" onclick="enviarComando('santodomingo')">Rojo: Santo Domingo[cite: 4]</button>
+    <button class="btn-obra" onclick="enviarComando('patriota')">Café: El Patriota</button>
+    <button class="btn-obra" onclick="enviarComando('fumadora')">Amarillo: La Fumadora</button>
+  </div>
 
-        function enviarComando(accion) {
-            const ip = document.getElementById('espIp').value.trim();
-            if (!ip) {
-                alert("Por favor ingresa primero la dirección IP que aparece en la LCD.");
-                return;
-            }
-            const url = `http://${ip}/${accion}`;
-            
-            fetch(url)
-                .then(response => response.text())
-                .then(data => console.log("Respuesta:", data))
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert("No se pudo conectar con el robot.");
-                });
-        }
-    </script>
+  <script>
+    // Configura automáticamente el puerto del stream en base a la IP actual del ESP32
+    window.onload = function () {
+      const host = window.location.hostname;
+      if (host) {
+        document.getElementById('stream').src = "http://" + host + ":81/stream";
+      }
+    };
+
+    function enviarComando(accion) {
+      fetch('/' + accion)
+        .then(response => response.text())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error:', error));
+    }
+  </script>
 
 </body>
 </html>
